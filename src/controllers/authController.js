@@ -1,89 +1,70 @@
-const fs = require("fs");
-const path = require("path");
+// Kullanıcı kimlik doğrulama işlemleri için gerekli fonksiyonlar
+
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { accessToken, refreshToken } = require("../config/jwtConfig");
 const RefreshToken = require("../models/RefreshToken");
 const User = require("../models/User");
 
+// Access ve refresh token oluşturma fonksiyonu
 const generateTokens = (user) => {
-  const accessTokenPayload = { id: user._id, email: user.email };
+  const accessTokenPayload = { id: user._id, email: user.email, role: user.role };
   const refreshTokenPayload = { id: user._id };
 
-  const newAccessToken = jwt.sign(accessTokenPayload, accessToken.secret, {
-    expiresIn: accessToken.expiresIn,
-  });
-
-  const newRefreshToken = jwt.sign(refreshTokenPayload, refreshToken.secret, {
-    expiresIn: refreshToken.expiresIn,
-  });
-
-  return { accessToken: newAccessToken, refreshToken: newRefreshToken };
+  return {
+    accessToken: jwt.sign(accessTokenPayload, accessToken.secret, { expiresIn: accessToken.expiresIn }),
+    refreshToken: jwt.sign(refreshTokenPayload, refreshToken.secret, { expiresIn: refreshToken.expiresIn }),
+  };
 };
 
+// Kullanıcı kaydı
 const registerUser = async (req, res) => {
   try {
-    // Check if user already exists
-    const existingUser = await User.findOne({ email: req.body.email });
-    if (existingUser) {
-      return res
-        .status(400)
-        .json({ message: "Bu email adresi zaten kayıtlı." });
+    const { username, email, password, role = "reader" } = req.body;
+
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: "Tüm alanlar doldurulmalıdır." });
     }
 
-    // Create new user
-    const user = new User({
-      email: req.body.email,
-      password: req.body.password,
-      name: req.body.name,
-    });
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "Bu email adresi zaten kayıtlı." });
+    }
 
+    const user = new User({ username, email, password, role });
     await user.save();
 
-    // Remove password from response
-    const userResponse = user.toObject();
-    delete userResponse.password;
-
+    const { password: _, ...userResponse } = user.toObject();
     res.status(201).json(userResponse);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(500).json({ message: "Kullanıcı kaydedilirken bir hata oluştu." });
   }
 };
 
+// Kullanıcı giriş işlemi
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Kullanıcıyı bul
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email ve şifre gereklidir." });
+    }
+
     const user = await User.findOne({ email });
-    if (!user) {
+    if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({ message: "Geçersiz email veya şifre." });
     }
 
-    // Şifreyi kontrol et
-    const validPassword = await user.comparePassword(password);
-    if (!validPassword) {
-      return res.status(401).json({ message: "Geçersiz email veya şifre." });
-    }
-
-    // Kullanıcının eski tüm refresh tokenlarını sil
     await RefreshToken.deleteMany({ userId: user._id });
-
-    // Yeni tokenları oluştur
     const tokens = generateTokens(user);
 
-    // Yeni refresh token'ı veritabanına kaydet
-    await RefreshToken.create({
-      userId: user._id,
-      token: tokens.refreshToken,
-    });
+    await RefreshToken.create({ userId: user._id, token: tokens.refreshToken });
 
-    // Cookie'leri ayarla
     res.cookie("accessToken", tokens.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 15 * 60 * 1000, // 15 dakika
+      maxAge: 15 * 60 * 1000,
     });
 
     res.cookie("refreshToken", tokens.refreshToken, {
@@ -91,45 +72,46 @@ const loginUser = async (req, res) => {
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/api/auth/refresh-token",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 gün
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    // Kullanıcı bilgilerinden şifreyi çıkar
-    const userResponse = user.toObject();
-    delete userResponse.password;
-
-    res.status(200).json({
-      message: "Giriş başarılı!",
-      user: userResponse,
-    });
+    const { password: _, ...userResponse } = user.toObject();
+    res.status(200).json({ message: "Giriş başarılı!", user: userResponse });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(500).json({ message: "Kullanıcı girişinde bir hata oluştu." });
   }
 };
 
+// Token yenileme işlemi
 const refreshTokens = async (req, res) => {
   try {
-    const oldRefreshToken = req.body.refreshToken;
-   console.log(req.user);
-   
-    // Remove old refresh token
+    const { refreshToken: oldRefreshToken } = req.body;
+
+    if (!oldRefreshToken) {
+      return res.status(400).json({ message: "Refresh token gereklidir." });
+    }
+
+    const storedToken = await RefreshToken.findOne({ token: oldRefreshToken });
+    if (!storedToken) {
+      return res.status(403).json({ message: "Geçersiz refresh token." });
+    }
+
+    const decoded = jwt.verify(oldRefreshToken, refreshToken.secret);
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({ message: "Kullanıcı bulunamadı." });
+    }
+
     await RefreshToken.deleteOne({ token: oldRefreshToken });
+    const tokens = generateTokens(user);
 
-    // Generate new tokens
-    const tokens = generateTokens(req.user);
+    await RefreshToken.create({ userId: user._id, token: tokens.refreshToken });
 
-    // Save new refresh token
-    await RefreshToken.create({
-      userId: req.user.id,
-      token: tokens.refreshToken,
-    });
-
-    // Set cookies
     res.cookie("accessToken", tokens.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 15 * 60 * 1000, // 15 minutes
+      maxAge: 15 * 60 * 1000,
     });
 
     res.cookie("refreshToken", tokens.refreshToken, {
@@ -137,35 +119,30 @@ const refreshTokens = async (req, res) => {
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/api/auth/refresh-token",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.json({ message: "Tokens refreshed" });
+    res.status(200).json({ message: "Tokenlar başarıyla yenilendi." });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(500).json({ message: "Token yenileme işleminde bir hata oluştu." });
   }
 };
 
-const logout = (req, res) => {
+// Kullanıcı çıkış işlemi
+const logout = async (req, res) => {
   try {
-    const refreshToken = req.cookies.refreshToken;
+    const { refreshToken } = req.cookies;
     if (refreshToken) {
-      RefreshToken.deleteOne({ token: refreshToken });
+      await RefreshToken.deleteOne({ token: refreshToken });
     }
 
-    // Clear cookies
     res.clearCookie("accessToken");
     res.clearCookie("refreshToken", { path: "/api/auth/refresh-token" });
 
-    res.json({ message: "Logged out successfully" });
+    res.status(200).json({ message: "Başarıyla çıkış yapıldı." });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(500).json({ message: "Çıkış işleminde bir hata oluştu." });
   }
 };
 
-module.exports = {
-  registerUser,
-  loginUser,
-  refreshTokens,
-  logout,
-};
+module.exports = { registerUser, loginUser, refreshTokens, logout };

@@ -2,12 +2,12 @@ const jwt = require("jsonwebtoken");
 const { accessToken, refreshToken } = require("../config/jwtConfig");
 const RefreshToken = require("../models/RefreshToken");
 
+// Erişim token'ını doğrulama işlemi
 const verifyAccessToken = (req, res, next) => {
-  const token =
-    req.cookies.accessToken || req.headers.authorization?.split(" ")[1];
+  const token = req.cookies.accessToken || req.headers.authorization?.split(" ")[1];
 
   if (!token) {
-    return res.status(403).json({ message: "Access token required" });
+    return res.status(403).json({ message: "Erişim token'ı gereklidir." });
   }
 
   try {
@@ -15,21 +15,22 @@ const verifyAccessToken = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (err) {
-    return res.status(401).json({ message: "Invalid or expired access token" });
+    return res.status(401).json({ message: "Geçersiz veya süresi dolmuş erişim token'ı." });
   }
 };
 
+// Yenileme token'ını doğrulama işlemi
 const verifyRefreshToken = async (req, res, next) => {
   const token = req.cookies.refreshToken || req.body.refreshToken;
 
   if (!token) {
-    return res.status(403).json({ message: "Refresh token required" });
+    return res.status(403).json({ message: "Yenileme token'ı gereklidir." });
   }
 
   try {
     const storedToken = await RefreshToken.findOne({ token });
     if (!storedToken) {
-      return res.status(403).json({ message: "Invalid refresh token" });
+      return res.status(403).json({ message: "Geçersiz yenileme token'ı." });
     }
 
     const decoded = jwt.verify(token, refreshToken.secret);
@@ -40,16 +41,17 @@ const verifyRefreshToken = async (req, res, next) => {
       await RefreshToken.deleteOne({
         token: req.cookies.refreshToken || req.body.refreshToken,
       });
-      return res.status(403).json({ message: "Expired refresh token" });
+      return res.status(403).json({ message: "Süresi dolmuş yenileme token'ı." });
     }
-    return res.status(403).json({ message: "Invalid refresh token" });
+    return res.status(403).json({ message: "Geçersiz yenileme token'ı." });
   }
 };
 
+// Rol tabanlı yetkilendirme işlemi
 const authorizeRoles = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ message: "Access denied: insufficient permissions" });
+      return res.status(403).json({ message: "Erişim reddedildi: Yetersiz yetki." });
     }
     next();
   };

@@ -1,85 +1,86 @@
-const Book = require("../models/Book.js")
-const path = require("path")
-const fs = require("fs")
+// Kitap işlemleri için gerekli fonksiyonlar
 
-const getAllBooks = (req, res) => {
+const Book = require("../models/Book.js");
+
+// Kitap listeleme işlemi
+const getAllBooks = async (req, res) => {
   try {
-    const books = Book.findAll()
-    res.json(books)
-  } catch (error) {
-    res.status(500).json({ message: error.message })
-  }
-}
+    const { category, sortBy, order } = req.query;
 
-const createBook = (req, res) => {
+    let query = {};
+    if (category) {
+      query.category = category;
+    }
+
+    const sortOptions = {};
+    if (sortBy) {
+      sortOptions[sortBy] = order === 'desc' ? -1 : 1;
+    }
+
+    const books = await Book.find(query).sort(sortOptions);
+    res.status(200).json(books);
+  } catch (error) {
+    res.status(500).json({ message: 'Kitaplar alınırken bir hata oluştu.' });
+  }
+};
+
+// Yeni kitap ekleme işlemi
+const createBook = async (req, res) => {
   try {
-    const newBook = { id: Date.now(), ...req.body }
+    const { title, author, category } = req.body;
 
-    // Boş alan kontrolü
-    if (!newBook.title || !newBook.author || !newBook.year || !newBook.genre || !newBook.pages) {
-      return res.status(400).json({
-        message: "Please complete all fields: title, author, year, genre, pages.",
-      })
+    if (!title || !author || !category) {
+      return res.status(400).json({ message: 'Lütfen tüm alanları doldurun: title, author, category.' });
     }
 
-    // Duplicate kontrolü
-    const books = Book.findAll()
-    const duplicateBook = books.find((book) => book.title === newBook.title)
-    if (duplicateBook) {
-      return res.status(400).json({ message: "Please do not duplicate book title!" })
-    }
+    const newBook = new Book(req.body);
+    await newBook.save();
 
-    Book.create(newBook)
-    res.status(201).json(newBook)
+    res.status(201).json(newBook);
   } catch (error) {
-    res.status(400).json({ message: error.message })
+    res.status(400).json({ message: 'Kitap eklenirken bir hata oluştu.' });
   }
-}
+};
 
-const updateBook = (req, res) => {
+// Kitap güncelleme işlemi
+const updateBook = async (req, res) => {
   try {
-    const { id, title, author, year, genre, pages } = req.body
+    const { id } = req.params;
+    const updates = req.body;
 
-    if (!title || !author || !year || !genre || !pages) {
-      return res.status(400).json({
-        message: "Please complete all fields: title, author, year, genre, pages.",
-      })
+    const updatedBook = await Book.findByIdAndUpdate(id, updates, { new: true, runValidators: true });
+
+    if (!updatedBook) {
+      return res.status(404).json({ message: 'Kitap bulunamadı.' });
     }
 
-    const updatedBook = Book.update(id, { title, author, year, genre, pages })
-
-    if (updatedBook) {
-      res.json({ success: true, book: updatedBook })
-    } else {
-      res.status(404).json({ success: false, message: "Kitap bulunamadı" })
-    }
+    res.status(200).json(updatedBook);
   } catch (error) {
-    res.status(400).json({ message: error.message })
+    res.status(400).json({ message: 'Kitap güncellenirken bir hata oluştu.' });
   }
-}
+};
 
-const deleteBook = (req, res) => {
+// Kitap silme işlemi
+const deleteBook = async (req, res) => {
   try {
-    const { bookId } = req.params
+    const { id } = req.params;
 
-    const findBook = Book.findById(bookId)
-    if (findBook) {
-      Book.delete(bookId)
-      res.status(200).json({
-        message: "Book deleted successfully",
-      })
-    } else {
-      res.status(404).json({ success: false, message: "Book not found!" })
+    const deletedBook = await Book.findByIdAndDelete(id);
+
+    if (!deletedBook) {
+      return res.status(404).json({ message: 'Kitap bulunamadı.' });
     }
+
+    res.status(200).json({ message: 'Kitap başarıyla silindi.' });
   } catch (error) {
-    res.status(400).json({ message: error.message })
+    res.status(400).json({ message: 'Kitap silinirken bir hata oluştu.' });
   }
-}
+};
 
 module.exports = {
   getAllBooks,
   createBook,
   updateBook,
   deleteBook,
-}
+};
 
