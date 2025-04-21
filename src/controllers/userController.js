@@ -6,11 +6,11 @@ const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
     if (!user) {
-      return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
+      return res.status(404).json({ message: 'User not found.' });
     }
     res.status(200).json(user);
   } catch (error) {
-    res.status(500).json({ message: 'Sunucu hatası.' });
+    res.status(500).json({ message: 'Server error.' });
   }
 };
 
@@ -24,11 +24,11 @@ const updateUserProfile = async (req, res) => {
     }).select('-password');
 
     if (!user) {
-      return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
+      return res.status(404).json({ message: 'User not found.' });
     }
     res.status(200).json(user);
   } catch (error) {
-    res.status(500).json({ message: 'Sunucu hatası.' });
+    res.status(500).json({ message: 'Server error.' });
   }
 };
 
@@ -38,25 +38,25 @@ const updatePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({ message: 'Mevcut ve yeni şifre gereklidir.' });
+      return res.status(400).json({ message: 'Current and new password are required.' });
     }
 
     const user = await User.findById(req.user.id);
     if (!user) {
-      return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
+      return res.status(404).json({ message: 'User not found.' });
     }
 
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Mevcut şifre yanlış.' });
+      return res.status(400).json({ message: 'Current password is incorrect.' });
     }
 
     user.password = newPassword;
     await user.save();
 
-    res.status(200).json({ message: 'Şifre başarıyla güncellendi.' });
+    res.status(200).json({ message: 'Password successfully updated.' });
   } catch (error) {
-    res.status(500).json({ message: 'Sunucu hatası.' });
+    res.status(500).json({ message: 'Server error.' });
   }
 };
 

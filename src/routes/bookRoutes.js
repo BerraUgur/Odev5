@@ -2,17 +2,29 @@ const express = require('express');
 const router = express.Router();
 const bookController = require('../controllers/bookController');
 const { verifyAccessToken, authorizeRoles } = require('../middleware/auth');
+const { addBookValidationRules, updateBookValidationRules } = require('../validators/bookValidator');
+const { validationResult } = require('express-validator');
 
-// Kitap listeleme (filtreleme ve sıralama dahil)
+// Middleware to handle validation errors
+const validate = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  next();
+};
+
+// Routes for book management
+// List all books (with filtering and sorting)
 router.get('/', bookController.getAllBooks);
 
-// Yeni kitap ekleme (sadece adminler)
-router.post('/', verifyAccessToken, authorizeRoles('admin'), bookController.createBook);
+// Add a new book (admin only)
+router.post('/', verifyAccessToken, authorizeRoles('admin'), addBookValidationRules, validate, bookController.createBook);
 
-// Kitap bilgilerini güncelleme (sadece adminler)
-router.put('/:id', verifyAccessToken, authorizeRoles('admin'), bookController.updateBook);
+// Update book details (admin only)
+router.put('/:id', verifyAccessToken, authorizeRoles('admin'), updateBookValidationRules, validate, bookController.updateBook);
 
-// Kitap silme (sadece adminler)
+// Delete a book (admin only)
 router.delete('/:id', verifyAccessToken, authorizeRoles('admin'), bookController.deleteBook);
 
 module.exports = router;

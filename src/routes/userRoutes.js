@@ -3,13 +3,14 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 const { verifyAccessToken } = require('../middleware/auth');
 
-// Kullanıcı profili görüntüleme
+// Routes for user management
+// Get user profile
 router.get('/profile', verifyAccessToken, userController.getUserProfile);
 
-// Kullanıcı profili güncelleme
+// Update user profile
 router.put('/profile', verifyAccessToken, userController.updateUserProfile);
 
-// Şifre güncelleme
+// Update user password
 router.put('/password', verifyAccessToken, userController.updatePassword);
 
 module.exports = router;
