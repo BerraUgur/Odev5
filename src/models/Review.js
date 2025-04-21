@@ -11,4 +11,7 @@ const reviewSchema = new mongoose.Schema({
   rating: { type: Number, min: 1, max: 5, required: true },
 }, { timestamps: true });
 
+// Add an index for bookId field
+reviewSchema.index({ bookId: 1 });
+
 module.exports = mongoose.model('Review', reviewSchema);

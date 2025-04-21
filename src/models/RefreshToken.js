@@ -20,4 +20,7 @@ const refreshTokenSchema = new mongoose.Schema({
   },
 });
 
+// Add an index for token field
+refreshTokenSchema.index({ token: 1 });
+
 module.exports = mongoose.model("RefreshToken", refreshTokenSchema);

@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema({
   // Kullanıcı adı
   username: { type: String, required: true, unique: true },
   // Kullanıcı email adresi
-  email: { type: String, required: true, unique: true },
+  email: { type: String, required: true },
   // Kullanıcı şifresi
   password: { type: String, required: true },
   // Kullanıcı rolü (user veya admin)
@@ -23,5 +23,8 @@ userSchema.pre('save', async function (next) {
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
+
+// Add an index to the email field for faster lookups
+userSchema.index({ email: 1 }, { unique: true });
 
 module.exports = mongoose.model('User', userSchema);

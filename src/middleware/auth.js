@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const { accessToken, refreshToken } = require("../config/jwtConfig");
 const RefreshToken = require("../models/RefreshToken");
+const ROLES = require('../constants/roles');
 
 // Verifying access token
 const verifyAccessToken = (req, res, next) => {

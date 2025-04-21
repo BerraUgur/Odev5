@@ -4,30 +4,30 @@ const fs = require("fs");
 const fsPromises = require("fs").promises;
 const path = require("path");
 
-// Logging errors
+// Function to log events
 const logEvents = async (message, logFileName) => {
-  const dateTime = format(new Date(), "dd.MM.yyyy\tHH.mm.ss");
+  const dateTime = format(new Date(), "yyyy-MM-dd\tHH:mm:ss");
   const logItem = `${dateTime}\t${uuid()}\t${message}`;
 
   try {
-    // Create log directory if it doesn't exist
+    // Ensure the logs directory exists
     if (!fs.existsSync(path.join(__dirname, "..", "logs"))) {
       await fsPromises.mkdir(path.join(__dirname, "..", "logs"));
     }
 
-    // Write to log file
+    // Append the log item to the specified log file
     await fsPromises.appendFile(
       path.join(__dirname, "..", "logs", logFileName),
       logItem + "\n"
     );
   } catch (error) {
-    console.error("An error occurred during logging:", error);
+    console.error("Error occurred while logging:", error);
   }
 };
 
-// Middleware for logging operations
+// Middleware to log HTTP requests
 const logger = (req, res, next) => {
-  const message = `${req.method}\t${req.url}\t${req.headers.origin || "no-origin"}`;
+  const message = `${req.method}\t${req.url}\t${req.headers.origin || "unknown"}`;
   logEvents(message, "reqLog.log");
   next();
 };

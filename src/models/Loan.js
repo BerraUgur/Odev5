@@ -13,4 +13,8 @@ const loanSchema = new mongoose.Schema({
   isReturned: { type: Boolean, default: false },
 }, { timestamps: true });
 
+// Add an index for user and book fields
+loanSchema.index({ user: 1 });
+loanSchema.index({ book: 1 });
+
 module.exports = mongoose.model('Loan', loanSchema);

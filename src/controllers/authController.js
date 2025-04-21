@@ -1,10 +1,9 @@
-// Functions required for user authentication
-
-const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const sanitize = require('mongo-sanitize');
 const { accessToken, refreshToken } = require("../config/jwtConfig");
 const RefreshToken = require("../models/RefreshToken");
 const User = require("../models/User");
+const ROLES = require('../constants/roles');
 
 // Function to generate access and refresh tokens
 const generateTokens = (user) => {
@@ -20,7 +19,8 @@ const generateTokens = (user) => {
 // User registration process
 const registerUser = async (req, res) => {
   try {
-    const { username, email, password, role = "user" } = req.body;
+    const sanitizedBody = sanitize(req.body);
+    const { username, email, password, role = ROLES.USER } = sanitizedBody;
 
     if (!username || !email || !password) {
       return res.status(400).json({ message: "All fields must be filled." });
@@ -44,7 +44,8 @@ const registerUser = async (req, res) => {
 // User login process
 const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const sanitizedBody = sanitize(req.body);
+    const { email, password } = sanitizedBody;
 
     if (!email || !password) {
       return res.status(400).json({ message: "Email and password are required." });

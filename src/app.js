@@ -13,8 +13,18 @@ const reviewRoutes = require("./routes/reviewRoutes");
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocs = require('./config/swaggerConfig');
 
 const app = express();
+
+// Swagger documentation setup
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
+// Redirect root URL to Swagger documentation
+app.get('/', (req, res) => {
+  res.redirect('/api-docs');
+});
 
 // Apply security middlewares
 app.use(helmet()); // Secure HTTP headers
