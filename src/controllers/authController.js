@@ -1,12 +1,12 @@
-// Kullanıcı kimlik doğrulama işlemleri için gerekli fonksiyonlar
+// Functions required for user authentication
 
-const bcrypt = require("bcryptjs");
+const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { accessToken, refreshToken } = require("../config/jwtConfig");
 const RefreshToken = require("../models/RefreshToken");
 const User = require("../models/User");
 
-// Access ve refresh token oluşturma fonksiyonu
+// Function to generate access and refresh tokens
 const generateTokens = (user) => {
   const accessTokenPayload = { id: user._id, email: user.email, role: user.role };
   const refreshTokenPayload = { id: user._id };
@@ -17,18 +17,18 @@ const generateTokens = (user) => {
   };
 };
 
-// Kullanıcı kaydı
+// User registration process
 const registerUser = async (req, res) => {
   try {
-    const { username, email, password, role = "reader" } = req.body;
+    const { username, email, password, role = "user" } = req.body;
 
     if (!username || !email || !password) {
-      return res.status(400).json({ message: "Tüm alanlar doldurulmalıdır." });
+      return res.status(400).json({ message: "All fields must be filled." });
     }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: "Bu email adresi zaten kayıtlı." });
+      return res.status(400).json({ message: "This email address is already registered." });
     }
 
     const user = new User({ username, email, password, role });
@@ -37,22 +37,22 @@ const registerUser = async (req, res) => {
     const { password: _, ...userResponse } = user.toObject();
     res.status(201).json(userResponse);
   } catch (error) {
-    res.status(500).json({ message: "Kullanıcı kaydedilirken bir hata oluştu." });
+    res.status(500).json({ message: "An error occurred while saving the user." });
   }
 };
 
-// Kullanıcı giriş işlemi
+// User login process
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: "Email ve şifre gereklidir." });
+      return res.status(400).json({ message: "Email and password are required." });
     }
 
     const user = await User.findOne({ email });
     if (!user || !(await user.comparePassword(password))) {
-      return res.status(401).json({ message: "Geçersiz email veya şifre." });
+      return res.status(401).json({ message: "Invalid email or password." });
     }
 
     await RefreshToken.deleteMany({ userId: user._id });
@@ -76,30 +76,30 @@ const loginUser = async (req, res) => {
     });
 
     const { password: _, ...userResponse } = user.toObject();
-    res.status(200).json({ message: "Giriş başarılı!", user: userResponse });
+    res.status(200).json({ message: "Login successful!", user: userResponse });
   } catch (error) {
-    res.status(500).json({ message: "Kullanıcı girişinde bir hata oluştu." });
+    res.status(500).json({ message: "An error occurred during user login." });
   }
 };
 
-// Token yenileme işlemi
+// Token refresh process
 const refreshTokens = async (req, res) => {
   try {
     const { refreshToken: oldRefreshToken } = req.body;
 
     if (!oldRefreshToken) {
-      return res.status(400).json({ message: "Refresh token gereklidir." });
+      return res.status(400).json({ message: "Refresh token is required." });
     }
 
     const storedToken = await RefreshToken.findOne({ token: oldRefreshToken });
     if (!storedToken) {
-      return res.status(403).json({ message: "Geçersiz refresh token." });
+      return res.status(403).json({ message: "Invalid refresh token." });
     }
 
     const decoded = jwt.verify(oldRefreshToken, refreshToken.secret);
     const user = await User.findById(decoded.id);
     if (!user) {
-      return res.status(404).json({ message: "Kullanıcı bulunamadı." });
+      return res.status(404).json({ message: "User not found." });
     }
 
     await RefreshToken.deleteOne({ token: oldRefreshToken });
@@ -122,13 +122,13 @@ const refreshTokens = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.status(200).json({ message: "Tokenlar başarıyla yenilendi." });
+    res.status(200).json({ message: "Tokens successfully refreshed." });
   } catch (error) {
-    res.status(500).json({ message: "Token yenileme işleminde bir hata oluştu." });
+    res.status(500).json({ message: "An error occurred during token refresh." });
   }
 };
 
-// Kullanıcı çıkış işlemi
+// Logout process
 const logout = async (req, res) => {
   try {
     const { refreshToken } = req.cookies;
@@ -139,9 +139,9 @@ const logout = async (req, res) => {
     res.clearCookie("accessToken");
     res.clearCookie("refreshToken", { path: "/api/auth/refresh-token" });
 
-    res.status(200).json({ message: "Başarıyla çıkış yapıldı." });
+    res.status(200).json({ message: "Successfully logged out." });
   } catch (error) {
-    res.status(500).json({ message: "Çıkış işleminde bir hata oluştu." });
+    res.status(500).json({ message: "An error occurred during logout." });
   }
 };
 

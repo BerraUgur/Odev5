@@ -1,8 +1,8 @@
-// Kitap işlemleri için gerekli fonksiyonlar
+// Book listing process
 
 const Book = require("../models/Book.js");
 
-// Kitap listeleme işlemi
+// Book listing process
 const getAllBooks = async (req, res) => {
   try {
     const { category, sortBy, order } = req.query;
@@ -20,17 +20,17 @@ const getAllBooks = async (req, res) => {
     const books = await Book.find(query).sort(sortOptions);
     res.status(200).json(books);
   } catch (error) {
-    res.status(500).json({ message: 'Kitaplar alınırken bir hata oluştu.' });
+    res.status(500).json({ message: 'An error occurred while retrieving books.' });
   }
 };
 
-// Yeni kitap ekleme işlemi
+// Adding a new book
 const createBook = async (req, res) => {
   try {
     const { title, author, category } = req.body;
 
     if (!title || !author || !category) {
-      return res.status(400).json({ message: 'Lütfen tüm alanları doldurun: title, author, category.' });
+      return res.status(400).json({ message: 'Please fill in all fields: title, author, category.' });
     }
 
     const newBook = new Book(req.body);
@@ -38,11 +38,11 @@ const createBook = async (req, res) => {
 
     res.status(201).json(newBook);
   } catch (error) {
-    res.status(400).json({ message: 'Kitap eklenirken bir hata oluştu.' });
+    res.status(400).json({ message: 'An error occurred while adding the book.' });
   }
 };
 
-// Kitap güncelleme işlemi
+// Updating book details
 const updateBook = async (req, res) => {
   try {
     const { id } = req.params;
@@ -51,16 +51,16 @@ const updateBook = async (req, res) => {
     const updatedBook = await Book.findByIdAndUpdate(id, updates, { new: true, runValidators: true });
 
     if (!updatedBook) {
-      return res.status(404).json({ message: 'Kitap bulunamadı.' });
+      return res.status(404).json({ message: 'Book not found.' });
     }
 
     res.status(200).json(updatedBook);
   } catch (error) {
-    res.status(400).json({ message: 'Kitap güncellenirken bir hata oluştu.' });
+    res.status(400).json({ message: 'An error occurred while updating the book.' });
   }
 };
 
-// Kitap silme işlemi
+// Deleting a book
 const deleteBook = async (req, res) => {
   try {
     const { id } = req.params;
@@ -68,12 +68,12 @@ const deleteBook = async (req, res) => {
     const deletedBook = await Book.findByIdAndDelete(id);
 
     if (!deletedBook) {
-      return res.status(404).json({ message: 'Kitap bulunamadı.' });
+      return res.status(404).json({ message: 'Book not found.' });
     }
 
-    res.status(200).json({ message: 'Kitap başarıyla silindi.' });
+    res.status(200).json({ message: 'Book successfully deleted.' });
   } catch (error) {
-    res.status(400).json({ message: 'Kitap silinirken bir hata oluştu.' });
+    res.status(400).json({ message: 'An error occurred while deleting the book.' });
   }
 };
 

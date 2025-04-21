@@ -10,10 +10,27 @@ const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const loanRoutes = require("./routes/loanRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
 
 const app = express();
 
-// Middleware'ler uygulama seviyesinde tanımlanır
+// Apply security middlewares
+app.use(helmet()); // Secure HTTP headers
+
+// Rate limiting middleware
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.'
+});
+app.use(limiter);
+
+// Sanitize user inputs
+app.use(mongoSanitize());
+
+// Middleware definitions at the application level
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -27,10 +44,10 @@ app.use("/api/users", userRoutes);
 app.use("/api/loans", loanRoutes);
 app.use("/api/reviews", reviewRoutes);
 
-// Statik dosyalar için dizin ayarlanır
+// Directory setup for static files
 app.use(express.static(path.join(__dirname, "views")));
 
-// Hata yakalama middleware'i eklenir
+// Add error handling middleware
 app.use(errorHandler);
 
 module.exports = app;

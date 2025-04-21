@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const bcrypt = require('bcrypt');
 
-// Kullanıcı profilini görüntüleme
+// Viewing user profile
 const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
@@ -14,7 +14,7 @@ const getUserProfile = async (req, res) => {
   }
 };
 
-// Kullanıcı profilini güncelleme
+// Updating user profile
 const updateUserProfile = async (req, res) => {
   try {
     const updates = req.body;
@@ -32,7 +32,7 @@ const updateUserProfile = async (req, res) => {
   }
 };
 
-// Şifre güncelleme
+// Updating password
 const updatePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;

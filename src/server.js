@@ -4,10 +4,10 @@ const connectDB = require("./config/dbConfig");
 
 const PORT = process.env.PORT || 3000;
 
-// Veritabanı bağlantısı kontrol edilir
+// Database connection is verified
 connectDB();
 
-// Sunucu başlatma işlemi burada gerçekleştirilir
+// Server initialization is handled here
 app.listen(PORT, () => {
   console.log(`Sunucu ${PORT} portunda çalışıyor!`);
 });

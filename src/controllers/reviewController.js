@@ -1,11 +1,11 @@
 const Review = require('../models/Review');
 
-// Kitap değerlendirmesi ekleme işlemi
+// Adding a book review
 const addReview = async (req, res) => {
   try {
     const { bookId, reviewText, rating } = req.body;
 
-    // Yeni değerlendirme oluştur
+    // Create a new review
     const review = new Review({
       user: req.user.id,
       book: bookId,
@@ -16,40 +16,40 @@ const addReview = async (req, res) => {
     await review.save();
     res.status(201).json(review);
   } catch (error) {
-    res.status(500).json({ message: 'Değerlendirme eklenirken bir hata oluştu.' });
+    res.status(500).json({ message: 'An error occurred while adding the review.' });
   }
 };
 
-// Değerlendirme silme işlemi
+// Deleting a review
 const deleteReview = async (req, res) => {
   try {
     const { reviewId } = req.params;
 
-    // Değerlendirme kontrolü
+    // Review check
     const review = await Review.findById(reviewId);
     if (!review || review.user.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Bu değerlendirmeyi silme yetkiniz yok.' });
+      return res.status(403).json({ message: 'You do not have permission to delete this review.' });
     }
 
     await review.remove();
-    res.status(200).json({ message: 'Değerlendirme başarıyla silindi.' });
+    res.status(200).json({ message: 'Review successfully deleted.' });
   } catch (error) {
-    res.status(500).json({ message: 'Değerlendirme silinirken bir hata oluştu.' });
+    res.status(500).json({ message: 'An error occurred while deleting the review.' });
   }
 };
 
-// Değerlendirme listeleme işlemi
+// Listing reviews
 const getReviews = async (req, res) => {
   try {
     const { bookId } = req.query;
 
-    // Kitaba göre değerlendirme sorgusu
+    // Query reviews by book
     const query = bookId ? { book: bookId } : {};
     const reviews = await Review.find(query).populate('user', 'username');
 
     res.status(200).json(reviews);
   } catch (error) {
-    res.status(500).json({ message: 'Değerlendirmeler alınırken bir hata oluştu.' });
+    res.status(500).json({ message: 'An error occurred while retrieving the reviews.' });
   }
 };
 

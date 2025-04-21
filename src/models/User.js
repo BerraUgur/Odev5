@@ -8,8 +8,8 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   // Kullanıcı şifresi
   password: { type: String, required: true },
-  // Kullanıcı rolü (reader veya admin)
-  role: { type: String, enum: ['reader', 'admin'], default: 'reader' },
+  // Kullanıcı rolü (user veya admin)
+  role: { type: String, enum: ['user', 'admin'], default: 'user' },
 }, { timestamps: true });
 
 // Şifreyi hashleme işlemi
