@@ -58,6 +58,23 @@ const options = {
             },
           },
         },
+        Favorite: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              description: "Favorite ID",
+            },
+            userId: {
+              type: "string",
+              description: "ID of the user who favorited the book",
+            },
+            bookId: {
+              type: "string",
+              description: "ID of the favorited book",
+            },
+          },
+        },
         Review: {
           type: "object",
           properties: {

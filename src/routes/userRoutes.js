@@ -77,7 +77,7 @@ const { addFavorite, getFavorites, removeFavorite } = require('../controllers/fa
  * /api/users/favorites:
  *   post:
  *     summary: Add a book to favorites
- *     tags: [Users]
+ *     tags: [Favorites]
  *     requestBody:
  *       required: true
  *       content:
@@ -87,43 +87,48 @@ const { addFavorite, getFavorites, removeFavorite } = require('../controllers/fa
  *             properties:
  *               bookId:
  *                 type: string
+ *                 description: ID of the book to be added to favorites
  *     responses:
- *       200:
+ *       201:
  *         description: Book added to favorites successfully
  *       400:
  *         description: Bad request
- */
-
-/**
- * @swagger
- * /api/users/favorites:
+ *       500:
+ *         description: Internal server error
+ *
  *   get:
  *     summary: Get all favorite books for a user
- *     tags: [Users]
+ *     tags: [Favorites]
  *     responses:
  *       200:
- *         description: Favorite books retrieved successfully
- *       404:
- *         description: User not found
- */
-
-/**
- * @swagger
+ *         description: List of favorite books retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Favorite'
+ *       500:
+ *         description: Internal server error
+ *
  * /api/users/favorites/{favoriteId}:
  *   delete:
  *     summary: Remove a book from favorites
- *     tags: [Users]
+ *     tags: [Favorites]
  *     parameters:
  *       - in: path
  *         name: favoriteId
  *         required: true
  *         schema:
  *           type: string
+ *         description: ID of the favorite to be removed
  *     responses:
  *       200:
- *         description: Book removed from favorites successfully
+ *         description: Favorite removed successfully
  *       404:
  *         description: Favorite not found
+ *       500:
+ *         description: Internal server error
  */
 
 // Routes for user management

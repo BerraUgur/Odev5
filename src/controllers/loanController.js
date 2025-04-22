@@ -1,5 +1,6 @@
 const Loan = require('../models/Loan');
 const Book = require('../models/Book');
+const { sendReminderEmail } = require('../config/mailService');
 
 // Borrowing a book
 const borrowBook = async (req, res) => {
@@ -64,8 +65,32 @@ const returnBook = async (req, res) => {
   }
 };
 
+// Function to send reminder emails for overdue loans
+const sendLoanReminders = async () => {
+  try {
+    const today = new Date();
+
+    // Find loans where the return date is overdue
+    const overdueLoans = await Loan.find({ returnDate: { $lt: today } }).populate('userId bookId');
+
+    for (const loan of overdueLoans) {
+      const { userId, bookId, returnDate } = loan;
+      const email = userId.email; // Assuming user model has an email field
+      const subject = 'Book Return Reminder';
+      const text = `Dear ${userId.username},\n\nThis is a reminder to return the book "${bookId.title}" which was due on ${returnDate.toDateString()}. Please return it as soon as possible to avoid penalties.\n\nThank you.`;
+
+      await sendReminderEmail(email, subject, text);
+    }
+
+    console.log('Reminder emails sent successfully.');
+  } catch (error) {
+    console.error('Error sending loan reminders:', error);
+  }
+};
+
 module.exports = {
   borrowBook,
   getUserLoans,
   returnBook,
+  sendLoanReminders,
 };

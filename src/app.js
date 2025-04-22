@@ -15,6 +15,8 @@ const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocs = require('./config/swaggerConfig');
+const cron = require('node-cron');
+const { sendLoanReminders } = require('./controllers/loanController');
 
 const app = express();
 
@@ -59,5 +61,11 @@ app.use(express.static(path.join(__dirname, "views")));
 
 // Add error handling middleware
 app.use(errorHandler);
+
+// Schedule a cron job to send loan reminders every day at 9 AM
+cron.schedule('0 9 * * *', async () => {
+  console.log('Running daily loan reminder job...');
+  await sendLoanReminders();
+});
 
 module.exports = app;
